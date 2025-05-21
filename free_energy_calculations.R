@@ -2,9 +2,16 @@
 ## Free energy calculations (real delta G) ##
 #############################################
 
-library(CHNOSZ)
-library(plyr)
-library(zoo)
+packages <- c("CHNOSZ","zoo","tidyverse")
+
+installed <- rownames(installed.packages())
+
+for (pkg in packages) {
+  if (!(pkg %in% installed)) {
+    install.packages(pkg, repos = "https://cloud.r-project.org")
+  }
+  library(pkg, character.only = TRUE)
+}
 
 # ~~~ pull in physicochemistry ~~~
   redox <- read.csv("physicochemical_summary.csv",check.names=FALSE)
