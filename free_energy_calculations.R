@@ -29,6 +29,7 @@ for (pkg in packages) {
     #the negative coefficient indicates that the respective species is a reactant
   
   FeOx_NitrateRed <- list(c("Fe+2","NO3-","H+","Fe+3","NO2-","H2O"),c(-2,-1,-2,2,1,1))
+  Ox_NitrateRed <- list(c("Fe+2","NO3-","H+","Fe+3","NO2-","H2O"),c(-2,-1,-2,2,1,1))
     
   reactions <- list(FeOx_NitrateRed)
 
