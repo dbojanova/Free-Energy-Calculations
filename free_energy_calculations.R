@@ -1,82 +1,48 @@
-#Free energy calculations (real delta G) 
+#############################################
+## Free energy calculations (real delta G) ##
+#############################################
 
 library(CHNOSZ)
 library(plyr)
 library(zoo)
 
-#set the working directory (where you have saved the physicochemical_summary.csv)
-
-  setwd("")
-
-#import site redox - includes temperature, pressure, and concentrations (M)
-
+# ~~~ pull in physicochemistry ~~~
   redox <- read.csv("physicochemical_summary.csv",check.names=FALSE)
-  
-#remove rows with NA for depth and methane
-  redox <- redox[rowSums(is.na(redox[,4:5])) == 0, ]  
 
-#replace NA values with previous value
-  redox$Pressure <- na.locf(redox$Pressure)
-
-#pull out the redox species names and indicate minerals of interest
-#MUST write minerals, if using any
-  names(redox) <- c("Site","Hole","Core","Depth","Temperature","Pressure","HCO3-",
-                    "Br-","Li+2","H+","P","salinity","SO4-2","S",
-                    "NH4+","PO4-3","HS-","Ba+2","B","Ca+2","Cl-",
-                    "Fe+2","Mg+2","Mn+2","K+","Si+4","Na+","Sr+2",
-                    "CO2","H2O","MnO2","FeOOH","Fe(OH)3","Fe2O3","Fe3O4",
-                    "CH4","ethane","propane","butane","pentane","hexane","H2","CO")
-  
-#isolate redox species names and minerals of interest
-  
-  redox_spp <- names(redox)[7:length(redox)]
-
-  
+# ~~~ indicate minerals of interest ~~~
   minerals <- c("MnO2","FeOOH","Fe(OH)3","Fe2O3","Fe3O4")
   
-#Select the ionic strength of your environment (either 0.001, 0,01, 0.1, or 0.7)
+# ~~~ Select the ionic strength of your environment (either 0.001, 0,01, 0.1, or 0.7) ~~~ 
+  I = 0.1
   
-  I = 0.7
-  
-#Set up reactions
+# ~~~ Set up reactions ~~~
   # Reaction names can be whatever you wish, just keep them consistent
   # Format is: 
     #reactionName = list(c(reactant1, reactant 2, product1, product2),c(-coef1, -coef2, coef3, coef4)
     #the negative coefficient indicates that the respective species is a reactant
   
-  #methanogenesis
-    Hmethano <- list(c("H2","CO2","CH4","H2O"),c(-4,-1,1,2))
-    HMmethano <- list(c("H2","methanol","CH4","H2O"),c(-1,-1,1,1))
-    Amethano <- list(c("H+","CH3COO-","CH4","CO2"),c(-1,-1,1,1))
-    Fmethano <- list(c("H+","HCO2-","CH4","CO2","H2O"),c(-4,-4,1,3,2))
-    Mmethano <- list(c("methanol","CH4","CO2","H2O"),c(-4,3,1,2))
-    methyl_methano <- list(c("methanamine","H2O","H+","CH4","CO2","NH4+"),
-                           c(-4,-2,-4,3,1,4))
-    Dmethyl_methano <- list(c("dimethylamine","H2O","H+","CH4","CO2","NH4+"),
-                            c(-2,-2,-2,3,1,2))
-    Tmethyl_methano <- list(c("trimethylamine","H2O","H+","CH4","CO2","NH4+"),
-                            c(-4,-6,-4,9,3,4))
-    DMSmethano <- list(c("dimethyl sulfide","H2O","CH4","CO2","HS-","H+"),
-                       c(-2,-2,3,1,2,2))
+  FeOx_NitrateRed <- list(c("Fe+2","NO3-","H+","Fe+3","NO2-","H2O"),c(-2,-1,-2,2,1,1))
     
-  reactions <- list(Hmethano,Amethano,Fmethano,HMmethano,Mmethano,methyl_methano
-                    ,Dmethyl_methano,Tmethyl_methano,DMSmethano)
+  reactions <- list(FeOx_NitrateRed)
 
-  reaction_names <- c("Hmethano","Amethano","Fmethano","HMmethano","Mmethano",
-                      "methyl_methano","Dmethyl_methano","Tmethyl_methano",
-                      "DMSmethano")
+  reaction_names <- c("FeOx_NitrateRed")
   
-
 ########################################################################################################
                                ### WORKING CODE - DO NOT CHANGE ###
 ########################################################################################################
 
-#Extract temperature (C) and pressure (bar) values
+# ~~~ Extract temperature (C) and pressure (bar) values ~~~
+# ~~~ Calculate H+ values from pH ~~~
   
   t <- redox$Temperature
   p <- redox$Pressure
+  pH <- redox$pH
+  redox$`H+` <- 10^(-redox$pH)
 
-#Calculate delta G knot
+# ~~~ Indicate redox spp to be considered ~~~
+  redox_spp <- names(redox)[5:length(redox)]
+
+# ~~~ Calculate delta G knot ~~~
   
   E.units("J")
   
@@ -93,9 +59,9 @@ library(zoo)
   }
  
 
-#Calculate activites using activity coeffient estimates for species charge from Amend and LaRowe (2019)
+# ~~~ Calculate activites using activity coeffient estimates for species charge from Amend and LaRowe (2019) ~~~
   
-  #Summary of activity coeffiencients for each ionic strength
+  # ~~~ Summary of activity coeffiencients for each ionic strength ~~~
   
   ionic = data.frame(
     ionicStrength = c(0.001,0.001,0.001,0.001,0.001,0.01,0.01,0.01,0.01,0.01,0.1,0.1,0.1,0.1,0.1,0.7,0.7,0.7,0.7,0.7),
@@ -109,7 +75,7 @@ library(zoo)
     plus3 = c(0.74,0.74,0.73,0.71,0.70,0.45,0.44,0.43,0.41,0.39,0.19,0.18,0.17,0.15,0.14,0.09,0.08,0.08,0.07,0.06)
     )
   
-  #Linear fit for ionic strength of choice and temperatures
+  # ~~~Linear fit for ionic strength of choice and temperatures ~~~
   
   ionicUsed = subset(ionic, ionic$ionicStrength == I) 
   
@@ -122,11 +88,11 @@ library(zoo)
     slope[temp - 2] = fit$coefficients[2]
   }
 
-  #Calculations based on the species in the original input redox
+  # ~~~ Calculations based on the species in the original input redox ~~~
 
-  for(conc in 7:length(redox)){
-    lastChar = substring(redox_spp[conc-6], nchar(redox_spp[conc-6]))
-    lastTwoChar = substring(redox_spp[conc-6], nchar(redox_spp[conc-6])-1,nchar(redox_spp[conc-6]))
+  for(conc in 5:length(redox)){
+    lastChar = substring(redox_spp[conc-4], nchar(redox_spp[conc-4]))
+    lastTwoChar = substring(redox_spp[conc-4], nchar(redox_spp[conc-4])-1,nchar(redox_spp[conc-4]))
     
     if(lastTwoChar == "-3"){
       redox[conc] = redox[conc]*(slope[1]*t + intercept[1])
@@ -144,8 +110,8 @@ library(zoo)
       redox[conc] = redox[conc]*(slope[4]*t + intercept[4])
     }
   }
-  head(redox)
-#Assign activities
+
+# ~~~ Assign activities ~~~
   
   activity <- list()
   
@@ -160,7 +126,7 @@ library(zoo)
     activity[[c]]<- spp_placement
   }
 
-#Make multiplication function for lists
+# ~~~ Make multiplication function for lists ~~~
   
   multiplyList <- function(myList){
     m <- 1
@@ -170,7 +136,7 @@ library(zoo)
     return(m)
   }
   
-#Calculate Q  
+# ~~~ Calculate Q ~~~ 
   
 Q <- list()
 
@@ -182,17 +148,16 @@ for(r in 1:length(reactions)){
   Q[[r]] <- multiplyList(A_react)
 }
 
-#Calculate the real Gibbs Energy for every reaction and return in redoxframe
+# ~~~ Calculate the real Gibbs Energy for every reaction and return in dataframe ~~~
 
-RealGibbs <- data.frame("Depth" =redox$Depth,"Temp" = t,"Pressure" = p)
-
+RealGibbs <- data.frame("Sample" =redox$Sample,"Temp" = t,"pH" = pH)
 
 for(gibbs in 1:length(reactions)){
   RealGibbs[gibbs+3] <- ((Gknot[[gibbs]]*Q[[gibbs]])/Q[[gibbs]])+0.0083145*(t+273.15)*log(Q[[gibbs]])
   names(RealGibbs)[gibbs+3] <- reaction_names[gibbs]
 }
 
-#Export 
-write.csv(RealGibbs, file = "Guaymas_RealGibbs_methano.csv",row.names = FALSE) 
+# ~~~ Export ~~~ 
+write.csv(RealGibbs, file = "RealGibbs.csv",row.names = FALSE) 
 
 
