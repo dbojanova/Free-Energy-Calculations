@@ -2,6 +2,7 @@
 
 library(shiny)
 library(ggplot2)
+library(plotly)
 
 #import calculation file
 source("free_energy_calcs.R")
@@ -35,7 +36,7 @@ ui <- fluidPage(
           
           
           textAreaInput("reactions","Enter reactions", 
-                      value ="Format: name = species1,species2,...|coefs1,coefs2,...
+                      placeholder ="Format: name = species1,species2,...|coefs1,coefs2,...
                       \nExample:\nFeOx_NitrateRed = Fe+2,NO3-,H+,Fe+3,NO2-,H2O|-2,-1,-2,2,1,1",
                       rows = 7),
           
@@ -144,9 +145,7 @@ server <- function(input, output, session) {
         pivot_longer(cols = all_of(rxns), names_to = "Reaction", values_to = "DeltaG")
       
       plot <- ggplot(melted, aes(x= DeltaG, y = .data[[ycol]], color = Reaction)) + 
-        annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "red", alpha = 0.05)+
-        annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, fill = "green", alpha = 0.05) +
-        (if (is.numeric(melted[[ycol]])) geom_path(size = 2) else geom_point(size = 3)) +
+        (if (is.numeric(melted[[ycol]])) geom_path(size = 1) else geom_point(size = 2)) +
         theme_minimal() +
         labs(title = paste("ΔG vs.", ycol), x = "ΔG (kJ/mol)", y = ycol) +
         expand_limits(x = -10)+
@@ -156,21 +155,21 @@ server <- function(input, output, session) {
     })
     
     #output the plot
-    output$gibbs_plot <- renderPlot({
+    output$gibbs_plot <- renderPlotly({
       req(plot_result())
-      plot_result()
+      ggplotly(plot_result())
     })
     
     #save the plot
-    output$download_plot <- downloadHandler(
-      filename = function() {
-        cleaned <- gsub("\\s+", "_", input$plot_output_name)
-        paste0(cleaned, ".png")
-      },
-      content = function(file) {
-        ggsave(file, plot = plot_result(), width = 8, height = 6, dpi = 300)
-      }
-    )
+    #output$download_plot <- downloadHandler(
+    #  filename = function() {
+    #    cleaned <- gsub("\\s+", "_", input$plot_output_name)
+    #    paste0(cleaned, ".png")
+    #  },
+    #  content = function(file) {
+    #    ggsave(file, plot = plot_result(), width = 8, height = 6, dpi = 300)
+    #  }
+    #)
     
     # generate active ui for table and plot results and downloads
     output$results_ui <- renderUI({
@@ -188,9 +187,10 @@ server <- function(input, output, session) {
                tags$hr(style = "border-top: 1px solid #333; margin-top: 0px; margin-bottom: 25px;"),
                #select y-axis for plot
                selectInput("y_axis_input","Select y-axis (options from input data):",choices = names(input_data())),
-               textInput("plot_output_name","Name of output file:",value = "plotted_results"),
-               downloadButton("download_plot","Download plotted results"),
-               plotOutput("gibbs_plot",height = "600px"))
+               h5("You can download as png by clicking the camera icon on the plotly plot."),
+               #textInput("plot_output_name","Name of output file:",value = "plotted_results"),
+               #downloadButton("download_plot","Download plotted results"),
+               plotlyOutput("gibbs_plot",height = "600px"))
       )
     })
 
