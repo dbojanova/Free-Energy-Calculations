@@ -101,12 +101,12 @@ free_energy_calcs <- function(redox, reactions, reaction_names, minerals, I) {
     Q[[r]] <- multiplyList(A_react)
   }
   
-  RealGibbs <- data.frame("Sample" = redox$Sample, "Temp" = t, "pH" = pH)
+  RealGibbs <- data.frame("Sample" = redox$Sample, "Temperature (C)" = t, "Pressure (bar)" = p,"pH" = pH,cehck.names = FALSE)
   
   for(gibbs in 1:length(reactions)){
-    RealGibbs[gibbs+3] <- ((Gknot[[gibbs]] * Q[[gibbs]]) / Q[[gibbs]]) + 0.0083145 * (t + 273.15) * log(Q[[gibbs]])
-    names(RealGibbs)[gibbs+3] <- reaction_names[gibbs]
+    RealGibbs[gibbs+4] <- ((Gknot[[gibbs]] * Q[[gibbs]]) / Q[[gibbs]]) + 0.0083145 * (t + 273.15) * log(Q[[gibbs]])
+    names(RealGibbs)[gibbs+4] <- paste0(reaction_names[gibbs]," (kJ/mol)")
   }
-  
+
   return(RealGibbs)
 }
