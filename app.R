@@ -12,12 +12,26 @@ ui <- fluidPage(
     sidebarLayout(
       
         sidebarPanel(
-          h4(style = "margin-bottom: 20px","IMPORTANT:All chemistry must be in CHNOSZ format"),
           
-          fileInput("physicochemistry_file","Upload physicochemisty csv",accept=".csv"),
+          #download physicochemical data
+          h4(style = "margin-bottom: 0px","Download file with physicochemical data"),
+          tags$hr(style = "border-top: 1px solid #333; margin-top: 0px; margin-bottom: 25px;"),
+
+          HTML('<strong>Upload csv (see '),
+          downloadLink("download_template", label = "template"),HTML('):</strong>'),
+          
+          fileInput("physicochemistry_file", NULL, accept = ".csv"),
+          
+          #inputs for calculations
+          h4(style = "margin-bottom: 0px","Setup for calculations"),
+          tags$hr(style = "border-top: 1px solid #333; margin-top: 0px; margin-bottom: 25px;"),
+          
+          h5(style = "margin-bottom: 20px",
+             HTML('<strong>IMPORTANT:</strong> All species must be in <a href="https://chnosz.net/vignettes/anintro.html" target=>CHNOSZ</a> format')),
           
           selectInput("ionic_strength","Select ionic strength",
                       choices = c(0.001,0.01,0.1,0.7),selected = "" ),
+          
           
           textAreaInput("reactions","Enter reactions", 
                       placeholder ="Format: name = species1,species2,...|coefs1,coefs2,...
@@ -28,30 +42,45 @@ ui <- fluidPage(
           
           textInput("output_name","Name of output file:",value = ""),
           
+          # run calculation
           actionButton("calc_button","Calculate"),
-          
-          downloadButton("download_results","Download results")
           ),
-
+          
         # show a summary of the table (top 10 rows)
         mainPanel(
           
-           h4("Results (preview)"),
-           
-           tableOutput("preview_table")
+          fluidRow(
+            
+            column(width = 6, h4("Tabular results (preview)"),
+                   tags$hr(style = "border-top: 1px solid #333; margin-top: 0px; margin-bottom: 25px;"),
+                   tableOutput("preview_table"),
+                   downloadButton("download_table","Download tabular results"))
+          )
         )
     )
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
-
+server <- function(input, output, session) {
+    
+    #download template when link is clicked
+    output$download_template <- downloadHandler(
+      filename = function() {
+        "input_file_template.csv"
+      },
+      content = function(file) {
+        file.copy("input_file_template.csv", file)
+      }
+    )
+    
+    #perform calculations
     results <- reactiveVal(NULL)
     
     observeEvent(input$calc_button, {
       
-      # there needs to be an input file
+      # there needs to be an input file and reactions
       req(input$physicochemistry_file)
+      req(input$reactions)
       
       #load the input file
       redox <- read.csv(input$physicochemistry_file$datapath, check.names = FALSE)
@@ -70,7 +99,7 @@ server <- function(input, output) {
         chem <- strsplit(trimws(parse[2]),"\\|")[[1]]
         species <- strsplit(chem[1], ",")[[1]]
         coefs <- as.numeric(strsplit(chem[2],",")[[1]])
-        reactions[[name]] <- list(species,coefs)
+        reactions_list[[name]] <- list(species,coefs)
       }
       
       reaction_names <- names(reactions_list)
@@ -82,11 +111,13 @@ server <- function(input, output) {
       }
     )
     
+    # output preview of results
     output$preview_table <- renderTable({
       head(results())
     })
     
-    output$download_results <- downloadHandler(
+    #download results if button pressed
+    output$download_table <- downloadHandler(
       filename = function() {
         cleaned <- gsub("\\s+", "_", input$output_filename)
         paste0(cleaned, ".csv")
