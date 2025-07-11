@@ -1,5 +1,5 @@
-RealGibbs.csv
-ShinyApp/.Rhistory
-ShinyApp/.RData
-ShinyApp/.Ruserdata
-ShinyApp/*.Rproj
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
