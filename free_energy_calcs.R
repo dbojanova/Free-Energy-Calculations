@@ -1,6 +1,4 @@
 library(CHNOSZ)
-library(zoo)
-library(tidyverse)
 
 free_energy_calcs <- function(redox, reactions, reaction_names, minerals, I) {
   
