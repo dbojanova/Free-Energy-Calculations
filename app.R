@@ -3,6 +3,8 @@
 library(shiny)
 library(ggplot2)
 library(plotly)
+library(tidyr)
+library(dplyr)
 
 #import calculation file
 source("free_energy_calcs.R")
