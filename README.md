@@ -14,7 +14,7 @@ Limitations:
 
 1. After cloning the repo, please run `renv::restore()` in a R session to ensure the required packages and versions are installed.
    
-2. Run app
+2. Run app: `Rscript app.R`
 
 3. Upload a physicochemical .csv file that follows the template (there is a link for the template within the app). A couple of notes about the file:
   - First 4 column must remain as: Sample, Temperature (C), Pressure (bar), pH.
