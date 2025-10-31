@@ -12,6 +12,8 @@ Limitations:
 
 ## Usage
 
+Note: this app uses R version 4.5.1 or higher.
+
 1. After cloning the repo, please run `renv::restore()` in a R session to ensure the required packages and versions are installed.
    
 2. Run app: `Rscript app.R`
